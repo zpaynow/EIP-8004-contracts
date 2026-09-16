@@ -18,6 +18,7 @@ contract InitCode is Script {
         console2.log(string.concat("MINIMAL_UUPS_INIT_CODE_HASH=", vm.toString(keccak256(Cfg.minimalUUPSInitCode()))));
         console2.log(string.concat("MINIMAL_UUPS_ADDRESS=", vm.toString(Cfg.minimalUUPSAddress())));
         console2.log(string.concat("PROXY_INIT_CODE_HASH=", vm.toString(keccak256(Cfg.proxyInitCode()))));
+        console2.log(string.concat("PLACEHOLDER_INIT_CALLDATA=", vm.toString(Cfg.placeholderInitCalldata())));
         console2.log(string.concat("IDENTITY_PROXY=", vm.toString(Cfg.identityProxyAddress())));
         console2.log(string.concat("REPUTATION_PROXY=", vm.toString(Cfg.reputationProxyAddress())));
         console2.log(string.concat("VALIDATION_PROXY=", vm.toString(Cfg.validationProxyAddress())));

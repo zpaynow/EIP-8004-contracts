@@ -1,4 +1,11 @@
-.PHONY: build test fmt mine anvil local deploy upgrade verify clean
+.PHONY: build test fmt mine anvil local clean \
+	dry deploy upgrade check src \
+	dry-test deploy-test upgrade-test check-test src-test
+
+# Deployment targets and explorer endpoints come from .env, which is never
+# committed -- see .env.example for the variables involved.
+-include .env
+export
 
 build:      ; forge build
 test:       ; forge test
@@ -12,7 +19,16 @@ mine:       ; ./script/mine.sh
 anvil:      ; anvil --auto-impersonate
 local:      ; ./script/local.sh
 
-# On-chain: make deploy NET=base_sepolia
-deploy:     ; forge script script/Deploy.s.sol  --rpc-url $(NET) --broadcast --verify
-upgrade:    ; forge script script/Upgrade.s.sol --rpc-url $(NET) --broadcast --verify
-verify:     ; forge script script/Verify.s.sol  --rpc-url $(NET)
+# ── testnet ────────────────────────────────────────────────────────────────
+dry-test:     ; forge script script/Deploy.s.sol  --rpc-url target_test
+deploy-test:  ; forge script script/Deploy.s.sol  --rpc-url target_test --broadcast
+upgrade-test: ; forge script script/Upgrade.s.sol --rpc-url target_test --broadcast
+check-test:   ; forge script script/Verify.s.sol  --rpc-url target_test
+src-test:     ; ./script/verify-contracts.sh "$(EXPLORER_TESTNET_API)"
+
+# ── mainnet ────────────────────────────────────────────────────────────────
+dry:          ; forge script script/Deploy.s.sol  --rpc-url target
+deploy:       ; forge script script/Deploy.s.sol  --rpc-url target --broadcast
+upgrade:      ; forge script script/Upgrade.s.sol --rpc-url target --broadcast
+check:        ; forge script script/Verify.s.sol  --rpc-url target
+src:          ; ./script/verify-contracts.sh "$(EXPLORER_API)"

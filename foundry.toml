@@ -37,11 +37,18 @@ int_types = "long"
 
 [rpc_endpoints]
 localhost = "http://127.0.0.1:8545"
+# Deployment targets, configured per environment in .env (never committed).
+target = "${TARGET_RPC_URL}"
+target_test = "${TARGET_TESTNET_RPC_URL}"
 sepolia = "${SEPOLIA_RPC_URL}"
 base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
 base = "${BASE_RPC_URL}"
 mainnet = "${MAINNET_RPC_URL}"
 
+# NOTE: only add a chain here if foundry actually knows its chain id. An entry
+# for an unrecognised id makes *every* forge script invocation fail with
+# "Chain <id> not supported", not just verification. Deployment targets are
+# therefore left out and verified through script/verify-contracts.sh instead.
 [etherscan]
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
 base_sepolia = { key = "${ETHERSCAN_API_KEY}" }

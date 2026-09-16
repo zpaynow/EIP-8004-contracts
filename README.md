@@ -24,7 +24,39 @@ The three proxies are deployed with CREATE2, so they carry **the same address on
 | MinimalUUPS (placeholder implementation) | `0x23B7C30F1cF35FBc4693D237aF130d78a27d775d` |
 | Owner (upgrade authority) | `0xbB64D716FAbDEC3a106bb913Fb4f82c1EeC851b8` |
 
-Per-chain deployment records live in `deployments/<chainId>.json`.
+### Live deployments
+
+Every chain the registries have been deployed to has a record in
+`deployments/<chainId>.json`, listing the proxies, the implementations behind them and the
+owner. Sources are published to the chain's explorer as part of each deployment.
+
+### Agent identifiers
+
+ERC-8004 identifies an agent by `{namespace}:{chainId}:{identityRegistry}` plus the `agentId`
+minted by the Identity Registry:
+
+```
+eip155:<chainId>:0x8004A3299823a3A0a7E4F1625A2760e5b9053Caa
+```
+
+Because CREATE2 gives the registry the same address on every chain, **the chain id is the
+only thing separating one deployment from another** -- mainnet and testnet included. Do not
+let the two blur together in SDKs or documentation.
+
+That string belongs in the `registrations` field of the agent's registration file, the JSON
+that `agentURI` resolves to, binding the off-chain description to the on-chain identity.
+
+### Which contract to integrate against
+
+The **IdentityRegistry** is the root of the system: identities are minted there, and the
+other two registries call into it to authorize writes. Integrators who only need agent
+discovery need nothing else. Reputation and Validation are optional trust layers on top.
+
+| You are | You call |
+|---|---|
+| an agent that wants to be discoverable | `IdentityRegistry.register(agentURI)` |
+| a client leaving feedback | `ReputationRegistry.giveFeedback(...)` |
+| a validator | `ValidationRegistry.validationRequest` / `validationResponse` |
 
 ## Quickstart
 
@@ -45,6 +77,18 @@ make deploy NET=base_sepolia
 make verify NET=base_sepolia
 ```
 
+Point `TARGET_RPC_URL` / `TARGET_TESTNET_RPC_URL` and `EXPLORER_API` /
+`EXPLORER_TESTNET_API` at the chain in `.env`, then:
+
+```bash
+make dry-test       # simulate against the live chain, spends nothing
+make deploy-test
+make check-test     # on-chain assertions: owner, implementations, cross-registry wiring
+make src-test       # publish sources to the explorer
+
+make dry / deploy / check / src      # same, against TARGET_RPC_URL
+```
+
 `Deploy.s.sol` runs all four steps and is **idempotent** — if it fails halfway, just run it
 again and anything already on-chain is detected and skipped:
 
@@ -61,6 +105,19 @@ Prerequisite: the target chain needs the CREATE2 factory at
 `0x4e59b44847b379578588920cA78FbF26c0B4956C`. Almost every EVM chain has it and anvil ships
 with it; if a chain does not, it can be deployed with the usual Nick's-method presigned
 transaction.
+
+### Source verification behind a WAF
+
+`make src` / `make src-test` do not shell out to `forge verify-contract`. Blockscout
+instances are often fronted by a WAF that 403s verification payloads over roughly 100KB, and
+our standard-json inputs are ~210KB once the OpenZeppelin sources are included.
+
+`script/verify-contracts.sh` generates the same standard-json foundry would send, strips the
+comments out of it, and posts it directly. Stripping comments cannot change the bytecode --
+`bytecode_hash = "none"` and `cbor_metadata = false` keep metadata out of the compiled output
+entirely -- and it halves the payload to ~97KB, under the limit. Verification is deliberately
+a separate step from deployment so that a flaky explorer can never fail a deployment that has
+already landed on-chain.
 
 ## Why there is a placeholder implementation
 
@@ -125,6 +182,8 @@ script/
   Verify.s.sol                read-only post-deployment checks, usable as a CI smoke test
   InitCode.s.sol              prints init code hashes and derived addresses
   mine.sh / local.sh
+  verify-contracts.sh         publishes sources to Blockscout
+  minify-standard-json.py     shrinks the verification payload past the WAF limit
 test/                         83 tests
 deployments/<chainId>.json    per-chain deployment records
 ```
