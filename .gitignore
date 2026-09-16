@@ -1,0 +1,16 @@
+# Foundry
+out/
+cache/
+broadcast/
+
+# Secrets
+.env
+.env.local
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Local chain deployments are not worth keeping
+deployments/31337.json
